@@ -1,0 +1,16 @@
+{
+  "name": "tarea2",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.15.1",
+    "elysia": "^1.0.24",
+    "prisma": "^5.15.1"
+  }
+}
