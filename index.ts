@@ -16,6 +16,12 @@ interface Body_Login {
     clave: string;
 }
 
+interface Body_Bloqueo{
+  correo: string;
+  clave: string;
+  correo_bloquear: string;
+}
+
 app.post('/api/login', async ({ body }) => {
     const { direccion_correo, clave } = body as Body_Login;
     if (!direccion_correo || !clave) {
@@ -78,4 +84,44 @@ app.post('/api/registrar', async ({ body }) => {
             message: 'Error interno al registrar usuario'
         };
     }
+
+});
+
+app.post('/api/bloquear', async ({ body }) =>{
+    const {clave, correo, correo_bloquear} = body as Body_Bloqueo;
+
+    try{
+      const usuario_bloquear = await prisma.usuario.findFirst({where: { direccion_correo: correo_bloquear }});
+      const usuario = await prisma.usuario.findFirst({where: {correo, clave}});
+
+      if (!usuario_bloquear){
+        return{
+          status: 404,
+          message: 'Correo a bloquear no encontrado',
+        };
+      }
+
+      const correo_bloqueado = await prisma.direcciones_bloqueadas.create({
+        data: {
+          direccion_bloqueada: correo_bloquear,
+          usuario_id: usuario.id,
+          fecha_bloqueo: new Date(),
+        }
+      });
+
+      return{
+        status: 200,
+        message: 'Correo bloqueado succesfully'
+      }
+      
+    } catch (error) {
+      console.error('Error al registrar usuario:', error);
+      return {
+          status: 500,
+          message: 'Error interno al registrar usuario'
+      };
+  }
+
+
+
 });
