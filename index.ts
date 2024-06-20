@@ -22,6 +22,13 @@ interface Body_Bloqueo{
   correo_bloquear: string;
 }
 
+interface Body_MarcarCorreo{
+    direccion_correo: string;
+    clave: string;
+    id_favorito: number;
+}
+
+
 
 app.post('/api/login', async ({ body }) => {
     const { direccion_correo, clave } = body as Body_Login;
@@ -89,7 +96,7 @@ app.post('/api/registrar', async ({ body }) => {
 });
 
 app.post('/api/bloquear', async ({ body }) =>{
-    const {clave, direccion_correo, correo_bloquear} = body as Body_Bloqueo;
+    const {direccion_correo, clave, correo_bloquear} = body as Body_Bloqueo;
 
     if (!clave || !direccion_correo || !correo_bloquear) {
         return {
@@ -158,7 +165,7 @@ app.get('/api/informacion/:correo', async ({ params }) =>{
         const usuario = await prisma.usuario.findFirst({where :{direccion_correo: correo}});
         if (!usuario){
             return{
-                status: 400,
+                status: 404,
                 message: 'Correo no encontrado',
             }
         }
@@ -180,15 +187,61 @@ app.get('/api/informacion/:correo', async ({ params }) =>{
         }
 
     };
-
-    
-
+});
 
 
+app.post('/api/marcarcorreo', async({ body })=>{
+    const {direccion_correo, clave, id_favorito} = body as Body_MarcarCorreo;
+
+    try{
+        const usuario = await prisma.usuario.findFirst({where: {direccion_correo, clave}});
+        if(!usuario){
+            return{
+                status: 404,
+                message: 'Correo no encontrado'
+
+            }
+        }
+
+        const usuarioFavorito = await prisma.usuario.findFirst({ where: { id: id_favorito } });
+        if (!usuarioFavorito) {
+            return {
+                status: 404,
+                message: 'ID de favorito no encontrado',
+            };
+        }
+        const direccionFavorita = usuarioFavorito.direccion_correo; 
+
+        const correo_favorito_existente = await prisma.direccionesFavoritas.findFirst({
+            where: { usuario_id: usuario.id, direccion_favorita: direccionFavorita }
+        });
 
 
+        if(correo_favorito_existente){
+            return{
+                status: 409,
+                message:'Correo ya es tu favorito'
+            }
+        }
 
+        const Favorito = await prisma.direccionesFavoritas.create({
+            data:{
+                usuario_id: usuario.id,
+                direccion_favorita: direccionFavorita,
+                fecha_agregado: new Date()
 
+            }
+        });
 
-
+        return{
+            status: 200,
+            message: 'Agregado a tu lista de favoritos correctamente'
+        }
+    } catch (error) {
+        console.error('Error al marcar el correo como favorito:', error);
+        return {
+            status: 500,
+            message: 'Error interno al marcar el correo como favorito',
+        };
+    }
 });
