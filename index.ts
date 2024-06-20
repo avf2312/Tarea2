@@ -17,7 +17,7 @@ interface Body_Login {
 }
 
 interface Body_Bloqueo{
-  correo: string;
+  direccion_correo: string;
   clave: string;
   correo_bloquear: string;
 }
@@ -88,20 +88,44 @@ app.post('/api/registrar', async ({ body }) => {
 });
 
 app.post('/api/bloquear', async ({ body }) =>{
-    const {clave, correo, correo_bloquear} = body as Body_Bloqueo;
+    const {clave, direccion_correo, correo_bloquear} = body as Body_Bloqueo;
+
+    if (!clave || !direccion_correo || !correo_bloquear) {
+        return {
+            status: 400,
+            message: 'Debe proporcionar los campos necesarios',
+        };
+    }
 
     try{
       const usuario_bloquear = await prisma.usuario.findFirst({where: { direccion_correo: correo_bloquear }});
-      const usuario = await prisma.usuario.findFirst({where: {correo, clave}});
-
-      if (!usuario_bloquear){
+      const usuario = await prisma.usuario.findFirst({where: {direccion_correo, clave}});
+      
+      if(!usuario){
+        return{
+            status: 401,
+            message: 'Clave o correo incorrecto'
+        }
+      }
+    
+      if (!usuario_bloquear){  //El correo a bloquear no existe
         return{
           status: 404,
-          message: 'Correo a bloquear no encontrado',
+          message: 'Correo a bloquear no existe',
         };
       }
 
-      const correo_bloqueado = await prisma.direcciones_bloqueadas.create({
+      const correo_bloqueado_existente = await prisma.direcciones_bloqueadas.findFirst({where: {usuario_id: usuario.id, direccion_bloqueada: correo_bloquear}})
+
+      if (correo_bloqueado_existente){
+        return{
+            status: 409,
+            message: 'Correo ya ha sido bloqueado'
+        }
+      }
+
+
+      const correo_bloqueado = await prisma.direcciones_bloqueadas.create({ //Se crea una entrada en la tabla direcciones_bloqueadas
         data: {
           direccion_bloqueada: correo_bloquear,
           usuario_id: usuario.id,
@@ -109,19 +133,18 @@ app.post('/api/bloquear', async ({ body }) =>{
         }
       });
 
-      return{
-        status: 200,
-        message: 'Correo bloqueado succesfully'
+      if(correo_bloqueado){ // Éxitoo
+        return{
+            status: 200,
+            message: 'Correo cloqueado exitosamente'
+        }
       }
       
     } catch (error) {
-      console.error('Error al registrar usuario:', error);
+      console.error('Error al bloquear usuario', error);
       return {
           status: 500,
-          message: 'Error interno al registrar usuario'
+          message: 'Error interno al bloquear usuario'
       };
   }
-
-
-
 });
