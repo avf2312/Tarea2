@@ -22,6 +22,7 @@ interface Body_Bloqueo{
   correo_bloquear: string;
 }
 
+
 app.post('/api/login', async ({ body }) => {
     const { direccion_correo, clave } = body as Body_Login;
     if (!direccion_correo || !clave) {
@@ -147,4 +148,47 @@ app.post('/api/bloquear', async ({ body }) =>{
           message: 'Error interno al bloquear usuario'
       };
   }
+});
+
+
+app.get('/api/informacion/:correo', async ({ params }) =>{ 
+    const {correo} = params;
+
+    try{
+        const usuario = await prisma.usuario.findFirst({where :{direccion_correo: correo}});
+        if (!usuario){
+            return{
+                status: 400,
+                message: 'Correo no encontrado',
+            }
+        }
+
+        return{
+            status: 200,
+            nombre: usuario.nombre,
+            correo: usuario.direccion_correo,
+            descripcion: usuario.descripcion,
+        };
+
+    }
+
+    catch(error){
+        console.error('Error al obtener la información del usuario',error);
+        return{
+            status:500,
+            message: 'Error interno al intenta obtener la información del usuario',
+        }
+
+    };
+
+    
+
+
+
+
+
+
+
+
+
 });
