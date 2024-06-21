@@ -28,6 +28,12 @@ interface Body_MarcarCorreo{
     id_favorito: number;
 }
 
+interface Body_DesmarcarCorreo{
+    direccion_correo: string;
+    clave: string;
+    id_favorito: number;
+}
+
 
 
 app.post('/api/login', async ({ body }) => {
@@ -58,7 +64,7 @@ app.post('/api/login', async ({ body }) => {
 
 // Función que permite registrar un usuario en la aplicación, verificando que se cumplan un par de condiciones para el correcto funcionamiento de esta.
 app.post('/api/registrar', async ({ body }) => {
-    const { nombre, direccion_correo, clave, descripcion } = body as Body_Registrar;
+    const { nombre, direccion_correo , clave, descripcion } = body as Body_Registrar;
 
     // Validación de que los campos no estén vacíos
     if (!nombre || !direccion_correo || !clave) {
@@ -123,7 +129,12 @@ app.post('/api/bloquear', async ({ body }) =>{
         };
       }
 
-      const correo_bloqueado_existente = await prisma.direcciones_bloqueadas.findFirst({where: {usuario_id: usuario.id, direccion_bloqueada: correo_bloquear}})
+      const correo_bloqueado_existente = await prisma.direcciones_bloqueadas.findFirst({
+        where: {
+            usuario_id: usuario.id, 
+            direccion_bloqueada: correo_bloquear
+        }}
+        )
 
       if (correo_bloqueado_existente){
         return{
@@ -245,3 +256,44 @@ app.post('/api/marcarcorreo', async({ body })=>{
         };
     }
 });
+
+
+app.delete('/api/desmarcarcorreo/', async ({ body }) => {
+    const { direccion_correo, clave, id_favorito } = body as Body_DesmarcarCorreo;
+
+    try {
+        const usuario = await prisma.usuario.findFirst({ where: { direccion_correo, clave } });
+
+        if (!usuario) {
+            return {
+                status: 404,
+                message: 'Usuario no encontrado o credenciales inválidas'
+            };
+        }
+        const usuarioFavorito = await prisma.direccionesFavoritas.findFirst({ where: { id: id_favorito } });
+
+        if (!usuarioFavorito) {
+            return {
+                status: 404,
+                message: 'Usuario favorito no encontrado'
+            };
+        }
+        await prisma.direccionesFavoritas.delete({
+            where: { id: id_favorito }
+        });
+
+        return {
+            status: 200,
+            message: 'Correo desmarcado correctamente'
+        };
+        
+    } catch (error) {
+        console.error('Error al desmarcar el correo:', error);
+        return {
+            status: 500,
+            message: 'Error interno al desmarcar el correo'
+        };
+    }
+});
+
+
