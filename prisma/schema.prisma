@@ -13,13 +13,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Usuario {
+model usuario {
   id                Int     @id @default(autoincrement())
-  nombre            String  @db.VarChar(45)
+  nombre            String  
   direccion_correo  String  @db.VarChar(45)
-  descripcion       String  @db.VarChar(45)
+  descripcion       String  
   fecha_creacion    DateTime
-  clave             String  @db.VarChar(45)
+  clave             String  
 
   direccionfavorita DireccionesFavoritas[]
   direcciones_bloqueada direcciones_bloqueadas[]
@@ -32,14 +32,14 @@ model DireccionesFavoritas {
   usuario_id        Int  @unique
   fecha_agregado    DateTime
   direccion_favorita String 
-  usuario             Usuario  @relation(fields: [usuario_id], references: [id])
+  usuario             usuario  @relation(fields: [usuario_id], references: [id])
 }
 
 model destinatarios {
   id_correo         Int     @id @default(autoincrement())
   id_destinatario   Int
   correoplop        correo  @relation(fields: [id_correo], references: [id])
-  destinatarioplop  Usuario @relation(fields: [id_destinatario], references: [id])
+  destinatarioplop  usuario @relation(fields: [id_destinatario], references: [id])
 }
 
 model direcciones_bloqueadas {
@@ -47,7 +47,7 @@ model direcciones_bloqueadas {
   usuario_id        Int
   fecha_bloqueo     DateTime
   direccion_bloqueada String
-  usuario           Usuario @relation(fields: [usuario_id], references: [id])
+  usuario           usuario @relation(fields: [usuario_id], references: [id])
 }
 
 model correo {
@@ -56,7 +56,6 @@ model correo {
   asunto            String @db.VarChar(45)
   cuerpo            String @db.VarChar(400)
   fecha_envio       DateTime
-
   destinatarios     destinatarios[]
-  remitenteplop     Usuario @relation(fields: [remitente], references: [id])
+  remitenteplop     usuario @relation(fields: [remitente], references: [id])
 }
