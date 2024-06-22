@@ -4,7 +4,7 @@ import { Elysia } from 'elysia';
 const prisma = new PrismaClient();
 const app = new Elysia();
 
-// Definición de las interfaces para los body dentro de los códigos.
+// Definición de las interfaces para los body dentro de los códigos
 interface Body_Registrar {
     nombre: string;
     direccion_correo: string;
@@ -34,10 +34,10 @@ interface Body_DesmarcarCorreo {
     id_favorito: number;
 }
 
-app
-    .post('/api/login', async ({ body }) => {
-        const { direccion_correo, clave } = body as Body_Login;
-        if (!direccion_correo || !clave) {
+app                                                                     //Encadenamiento de funciones para que el framework funcione
+    .post('/api/login', async ({ body }) => {                           // /api/login ingrtesa la sesión del usuario si es que este existe
+        const { direccion_correo, clave } = body as Body_Login;         // En el caso de no existir o que exista un error, ese erros se muestra con su número de error
+        if (!direccion_correo || !clave) {                              // correspondiente                
             return {
                 status: 400,
                 message: 'Debe proporcionar dirección de correo y clave',
@@ -60,10 +60,9 @@ app
             };
         }
     })
-    .post('/api/registrar', async ({ body }) => {
-        const { nombre, direccion_correo, clave, descripcion } = body as Body_Registrar;
-
-        if (!nombre || !direccion_correo || !clave) {
+    .post('/api/registrar', async ({ body }) => {                                                  // /api/registrar, registra al usuario dentro de la base de datos 
+        const { nombre, direccion_correo, clave, descripcion } = body as Body_Registrar;           // Chequea primero si el usuario está registrado y si lo está da el número de error correspondiente
+        if (!nombre || !direccion_correo || !clave) {                                              // Si el usuario no está creado, se inserta en la base de datos junto con los datos necesarios                
             return {
                 status: 400,
                 message: 'Debe rellenar todos los campos obligatorios (nombre, dirección de correo, clave)'
@@ -94,10 +93,9 @@ app
             };
         }
     })
-    .post('/api/bloquear', async ({ body }) => {
-        const { direccion_correo, clave, correo_bloquear } = body as Body_Bloqueo;
-
-        if (!clave || !direccion_correo || !correo_bloquear) {
+    .post('/api/bloquear', async ({ body }) => {                                               // /api/bloquear recibe el usuario, y primero verifica si el correo que desea bloquear existe
+        const { direccion_correo, clave, correo_bloquear } = body as Body_Bloqueo;             // si el correo no existe se muestra el número de error correspondiente, al igual que checkea si el usuario existe
+        if (!clave || !direccion_correo || !correo_bloquear) {                                 // se sigue con el proceso de agregar de verificar si el usuario ya está bloqueado, si no lo está se añade a la tabla de direcciones_bloquedas
             return {
                 status: 400,
                 message: 'Debe proporcionar los campos necesarios',
@@ -156,8 +154,8 @@ app
             };
         }
     })
-    .get('/api/informacion/:correo', async ({ params }) => {
-        const { correo } = params;
+    .get('/api/informacion/:correo', async ({ params }) => {                                   // /api/informacion/:correo verifica primero si existe el correo que se quiere saber la información
+        const { correo } = params;                                                             // en el caso de que no exista se muestra el código de error, en el caso de existir se muestra la información del correo
 
         try {
             const usuario = await prisma.usuario.findFirst({ where: { direccion_correo: correo } });
@@ -183,9 +181,9 @@ app
             };
         }
     })
-    .post('/api/marcarcorreo', async ({ body }) => {
-        const { direccion_correo, clave, id_favorito } = body as Body_MarcarCorreo;
-
+    .post('/api/marcarcorreo', async ({ body }) => {                                              // /api/marcarcorreo Primero se verifica que el usuario existe para poder revisar la base de datos para ingresar los datos de correo favorito
+        const { direccion_correo, clave, id_favorito } = body as Body_MarcarCorreo;               // Se verifica que el usuario que se quiere poner como favorito existe, y luego se vuelve a revisar si ya está en la base de datos como favorito del usuario.
+                                                                                                  // si el usuario no está como favorito, se agrega a la tabla de de direccionesFavoritas
         try {
             const usuario = await prisma.usuario.findFirst({ where: { direccion_correo, clave } });
             if (!usuario) {
@@ -235,7 +233,8 @@ app
             };
         }
     })
-    .delete('/api/desmarcarcorreo/', async ({ body }) => {
+    .delete('/api/desmarcarcorreo/', async ({ body }) => {                                    // /api/desmarcarcorreo hace más o menos el mismo trabajo que la función anterior, pero con la diferencia que al final de verificar
+                                                                                              // se borra los datos del usuario que se quiere desmarcar de la tabla direcciones_favoritas
         const { direccion_correo, clave, id_favorito } = body as Body_DesmarcarCorreo;
 
         try {
