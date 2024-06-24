@@ -49,9 +49,9 @@ interface Body_vercorreosfav{
 
 
 app
-    .post('/api/registrar', async ({ body, set }) => {
-        const { nombre, direccion_correo, clave, descripcion } = body as Body_Registrar;
-        if (!nombre || !direccion_correo || !clave) {
+    .post('/api/registrar', async ({ body, set }) => {                                     // Registrar hace suyo el body correspondiente, checkea si ya existe el usuario, 
+        const { nombre, direccion_correo, clave, descripcion } = body as Body_Registrar;   // si no está registrado se añada a las tablas correspondientes en la base de datos
+        if (!nombre || !direccion_correo || !clave) {                                      // También la api toma en cuenta los distintos errores que pueden ocurrir
             set.status = 400;
             return { 
                 message: 'Debe rellenar todos los campos obligatorios (nombre, dirección de correo, clave)' 
@@ -88,8 +88,8 @@ app
             };
         }
     })
-    .post('/api/login', async ({ body, set }) => {
-        const { direccion_correo, clave } = body as Body_Login;
+    .post('/api/login', async ({ body, set }) => {                                       // Para login se hace el mismo proceso que para registrar, se checkea si existe el usuario, si no se encuentra se da el error correspondiente
+        const { direccion_correo, clave } = body as Body_Login;                         //Si no se logea perfectamente a la plataforma de ComunniKen
         if (!direccion_correo || !clave) {
             set.status = 400;
             return { 
@@ -117,9 +117,9 @@ app
             };
         }
     })
-    .post('/api/bloquear', async ({ body, set }) => {
-        const { direccion_correo, clave, correo_bloquear } = body as Body_Bloqueo;
-        if (!clave || !direccion_correo || !correo_bloquear) {
+    .post('/api/bloquear', async ({ body, set }) => {                                       //bloquear usuario a pesar de no estar inscrita en el menú, está aquí en las funciones de la api
+        const { direccion_correo, clave, correo_bloquear } = body as Body_Bloqueo;          // primeramente se verifica si el usuario que queremos bloquear existe en nuestras tablas,
+        if (!clave || !direccion_correo || !correo_bloquear) {                              // si es que no lo hace se da el error correspondiente y si existe, se bloquea exitosamente
             set.status = 400;
             return { 
                 message: 'Debe proporcionar los campos necesarios' 
@@ -178,8 +178,8 @@ app
             };
         }
     })
-    .get('/api/informacion/:correo', async ({ params, set }) => {
-        const { correo } = params;
+    .get('/api/informacion/:correo', async ({ params, set }) => {                       //informacion lo que hace primeramente es verificar si existe el usuario que queremos encontrar la información
+        const { correo } = params;                                                      // si existe el usuario nos devuelve un JSON con los datos respectivos del usuario que queremos saber la información
 
         try {
             const usuario = await prisma.usuario.findFirst({ where: { direccion_correo: correo } });
@@ -205,9 +205,9 @@ app
             };
         }
     })
-    .post('/api/marcarcorreo', async ({ body, set }) => {
-        const { direccion_correo, clave, id_favorito } = body as Body_MarcarCorreo;
-
+    .post('/api/marcarcorreo', async ({ body, set }) => {                                  //marcar correo principalmente checkea que los dos correos principales existan, como de valor nos dan el id del correo que queremos hacer favorito
+        const { direccion_correo, clave, id_favorito } = body as Body_MarcarCorreo;        // encontramos mediante busqueda cual es el correo correspondiente y si este ya es favorito, se da el error correspondiente.
+                                                                                            // por otro lado, si el correo aún no ha sido marcado se añade a la tabla correspondiente en la base de datos
     try {
         // Buscar el usuario por su dirección de correo y clave
         const usuario = await prisma.usuario.findFirst({ where: { direccion_correo, clave } });
@@ -263,8 +263,8 @@ app
             };
         }
     })
-    .delete('/api/desmarcarcorreo/', async ({ body, set }) => {
-        const { direccion_correo, clave, id_favorito } = body as Body_DesmarcarCorreo;
+    .delete('/api/desmarcarcorreo/', async ({ body, set }) => {                                 //desmarcar correo hace la misma función que marcar correo pero de manera contraria, encuentra el usuario mediante su id y borra de las tablas 
+        const { direccion_correo, clave, id_favorito } = body as Body_DesmarcarCorreo;          // sus datos. 
 
         try {
             const usuario = await prisma.usuario.findFirst({ where: { direccion_correo, clave } });
@@ -299,8 +299,8 @@ app
             };
         }
     })
-    .post('/api/enviarcorreo', async ({body, set}) =>{
-        const {direccion_remitente, asuntocorreo, cuerpocorreo, direccion_destinatario} = body as Body_EnviarCorreo;
+    .post('/api/enviarcorreo', async ({body, set}) =>{                                                                 //enviar correo recibe como body 4 parametros, las dos verificaciones importantes que se hacen es si los correos existen en la base de datos
+        const {direccion_remitente, asuntocorreo, cuerpocorreo, direccion_destinatario} = body as Body_EnviarCorreo;    // despues de esta verificación, se procede con crear los datos para la base de datos del correo correspondiente
         
         try{
             const correodestinatario = await prisma.usuario.findFirst({ where: {direccion_correo: direccion_destinatario} });
@@ -310,7 +310,6 @@ app
                     message: 'Correo del destinatario no encontrado'
                 }
             };
-
             const destinatario_id = correodestinatario.id;
             const remitente = await prisma.usuario.findFirst({where: {direccion_correo: direccion_remitente}})
             if (!remitente){
@@ -320,7 +319,6 @@ app
                 }
             }
             const remitente_id = remitente.id;
-
             const correoCreado = await prisma.correo.create({
                 data: {
                   remitente: remitente_id,
@@ -342,8 +340,8 @@ app
             }
         }
     })
-    .get('/api/vercorreosfavoritos/:direccioncorreo', async ({ params, set })=>{
-        const { direccioncorreo } = params;  
+    .get('/api/vercorreosfavoritos/:direccioncorreo', async ({ params, set })=>{     // ver correos favoritos actúa de la misma manera que actua información, verificamos la existencia de que el correo del usuario exista y desde ahí
+        const { direccioncorreo } = params;                                          // se manda al python el data para imprimirlo en la terminal
 
     try {
         const usuariovercorreos = await prisma.usuario.findFirst({ where: { direccion_correo: direccioncorreo } });
