@@ -1,0 +1,6 @@
+powershell -c "irm bun.sh/install.ps1 | iex" 
+npm install @prisma/client
+npm install @prisma/client prisma
+reset
+bun install
+pip install requests
