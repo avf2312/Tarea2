@@ -24,23 +24,16 @@ model usuario {
   direccionfavorita DireccionesFavoritas[]
   direcciones_bloqueada direcciones_bloqueadas[]
   correos correo[]
-  destinatario destinatarios[]
 }
 
 model DireccionesFavoritas {
   id                Int  @id @default(autoincrement())
-  usuario_id        Int  @unique
+  usuario_id        Int  
   fecha_agregado    DateTime
   direccion_favorita String 
   usuario             usuario  @relation(fields: [usuario_id], references: [id])
 }
 
-model destinatarios {
-  id_correo         Int     @id @default(autoincrement())
-  id_destinatario   Int
-  correoplop        correo  @relation(fields: [id_correo], references: [id])
-  destinatarioplop  usuario @relation(fields: [id_destinatario], references: [id])
-}
 
 model direcciones_bloqueadas {
   id                Int     @id @default(autoincrement())
@@ -56,6 +49,6 @@ model correo {
   asunto            String @db.VarChar(45)
   cuerpo            String @db.VarChar(400)
   fecha_envio       DateTime
-  destinatarios     destinatarios[]
+  destinatarios     Int
   remitenteplop     usuario @relation(fields: [remitente], references: [id])
 }
