@@ -4,3 +4,11 @@ npm install @prisma/client prisma
 reset
 bun install
 pip install requests
+
+
+cd api
+npx prisma migrate dev --name init
+
+
+cd Cliente
+py main.py
