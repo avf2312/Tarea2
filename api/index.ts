@@ -34,6 +34,20 @@ interface Body_DesmarcarCorreo {
     id_favorito: number;
 }
 
+interface Body_EnviarCorreo {
+    direccion_remitente: string;
+    asuntocorreo: string;
+    cuerpocorreo: string;
+    direccion_destinatario: string;
+
+}
+
+interface Body_vercorreosfav{
+    direccion_correover: string;
+}
+
+
+
 app
     .post('/api/registrar', async ({ body, set }) => {
         const { nombre, direccion_correo, clave, descripcion } = body as Body_Registrar;
@@ -194,50 +208,59 @@ app
     .post('/api/marcarcorreo', async ({ body, set }) => {
         const { direccion_correo, clave, id_favorito } = body as Body_MarcarCorreo;
 
-        try {
-            const usuario = await prisma.usuario.findFirst({ where: { direccion_correo, clave } });
-            if (!usuario) {
-                set.status = 401;
-                return { 
-                    message: 'Correo o clave incorrecta' 
-                };
-            }
-
-            const usuarioFavorito = await prisma.usuario.findFirst({ where: { id: id_favorito } });
-            if (!usuarioFavorito) {
-                set.status = 404;
-                return { 
-                    message: 'ID de favorito no encontrado'
-                };
-            }
-            const direccionFavorita = usuarioFavorito.direccion_correo;
-
-            const correo_favorito_existente = await prisma.direccionesFavoritas.findFirst({where: { usuario_id: usuario.id, direccion_favorita: direccionFavorita }});
-
-            if (correo_favorito_existente) {
-                set.status = 409;
-                return { 
-                    message: 'Correo ya es tu favorito' 
-                };
-            }
-
-            await prisma.direccionesFavoritas.create({
-                data: {
-                    usuario_id: usuario.id,
-                    direccion_favorita: direccionFavorita,
-                    fecha_agregado: new Date()
-                }
-            });
-            set.status = 200;
+    try {
+        // Buscar el usuario por su dirección de correo y clave
+        const usuario = await prisma.usuario.findFirst({ where: { direccion_correo, clave } });
+        if (!usuario) {
+            set.status = 401;
             return { 
-                message: 'Agregado a tu lista de favoritos correctamente' 
+                message: 'Correo o clave incorrecta' 
             };
-        } catch (error) {
-            console.error('Error al marcar el correo como favorito:', error);
-            set.status = 500;
-            return {
-                 message: 'Error interno al marcar el correo como favorito' 
-                };
+        }
+
+        const usuarioFavorito = await prisma.usuario.findFirst({ where: { id: id_favorito } });
+        if (!usuarioFavorito) {
+            set.status = 404;
+            return { 
+                message: 'ID de favorito no encontrado'
+            };
+        }
+        const direccionFavorita = usuarioFavorito.direccion_correo;
+
+       
+        const usuario_id = usuario.id;
+
+        
+        const correo_favorito_existente = await prisma.direccionesFavoritas.findFirst({
+            where: { usuario_id: usuario_id, direccion_favorita: direccionFavorita }
+        });
+
+        if (correo_favorito_existente) {
+            set.status = 409;
+            return { 
+                message: 'Correo ya es tu favorito' 
+            };
+        }
+
+
+        await prisma.direccionesFavoritas.create({
+            data: {
+                usuario_id: usuario_id,
+                direccion_favorita: direccionFavorita,
+                fecha_agregado: new Date()
+            }
+        });
+
+        set.status = 200;
+        return { 
+            message: 'Agregado a tu lista de favoritos correctamente' 
+        };
+    } catch (error) {
+        console.error('Error al marcar el correo como favorito:', error);
+        set.status = 500;
+        return {
+            message: 'Error interno al marcar el correo como favorito' 
+            };
         }
     })
     .delete('/api/desmarcarcorreo/', async ({ body, set }) => {
@@ -275,6 +298,78 @@ app
                 message: 'Error interno al desmarcar el correo' 
             };
         }
+    })
+    .post('/api/enviarcorreo', async ({body, set}) =>{
+        const {direccion_remitente, asuntocorreo, cuerpocorreo, direccion_destinatario} = body as Body_EnviarCorreo;
+        
+        try{
+            const correodestinatario = await prisma.usuario.findFirst({ where: {direccion_correo: direccion_destinatario} });
+            if(!correodestinatario){
+                set.status = 404;
+                return{
+                    message: 'Correo del destinatario no encontrado'
+                }
+            };
+
+            const destinatario_id = correodestinatario.id;
+            const remitente = await prisma.usuario.findFirst({where: {direccion_correo: direccion_remitente}})
+            if (!remitente){
+                set.status = 404;
+                return{
+                    message: 'Remitente no encontrado'
+                }
+            }
+            const remitente_id = remitente.id;
+
+            const correoCreado = await prisma.correo.create({
+                data: {
+                  remitente: remitente_id,
+                  asunto: asuntocorreo,
+                  cuerpo: cuerpocorreo,
+                  fecha_envio: new Date(),
+                  destinatarios: destinatario_id,
+                }
+              });
+            set.status = 200;
+            return {
+                message: 'Correo enviado con éxito'
+            }
+
+        } catch(error){
+            set.status = 500;
+            return {
+                message: 'Error interno al enviar correo'
+            }
+        }
+    })
+    .get('/api/vercorreosfavoritos/:direccioncorreo', async ({ params, set })=>{
+        const { direccioncorreo } = params;  
+
+    try {
+        const usuariovercorreos = await prisma.usuario.findFirst({ where: { direccion_correo: direccioncorreo } });
+        if (!usuariovercorreos) {
+            set.status = 404;
+            return {
+                message: 'Usuario no encontrado'
+            };
+        }
+
+        const usuariovercorreos_id = usuariovercorreos.id;
+
+        const direccionesfavoritas = await prisma.direccionesFavoritas.findMany({ where: { usuario_id: usuariovercorreos_id } });
+        set.status = 200;
+        return {
+            message: 'Direcciones Favoritas mostradas correctamente',
+            direccionesfav: direccionesfavoritas,
+        };
+
+    } catch (error) {
+        console.error('Error interno al intentar mostrar las direcciones Favoritas', error);
+        set.status = 500;
+        return {
+            message: 'Error interno al intentar mostrar las direcciones Favoritas'
+        };
+    }
     })
     .get('/api', ({ set }) => {
         set.status = 200;
